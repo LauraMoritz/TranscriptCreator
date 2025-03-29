@@ -6,3 +6,5 @@ torchaudio
 python-multipart
 moviepy
 pyannote.audio
+imageio-ffmpeg
+
