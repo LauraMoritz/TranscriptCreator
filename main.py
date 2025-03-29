@@ -3,22 +3,21 @@ from fastapi.responses import FileResponse
 import shutil
 import os
 import whisper
-import moviepy
-from moviepy import editor as mp
+import subprocess
 from pyannote.audio.pipelines import SpeakerDiarization
 
 app = FastAPI()
 
-# Hugging Face API Key (ersetzen mit deinem Token!)
+# Hugging Face API Key (aus Umgebungsvariable)
 HUGGINGFACE_TOKEN = os.getenv("HUGGINGFACE_TOKEN")
 
-# Pfad zu ffmpeg setzen (wichtig für Mac, ggf. anpassen)
+# Optional: Pfad zu ffmpeg setzen (nur nötig für lokalen Mac, nicht auf Render)
 os.environ["PATH"] += os.pathsep + "/opt/homebrew/bin/"
 
-# Whisper-Modell laden (einmalig beim Start)
+# Whisper-Modell laden
 model = whisper.load_model("small")
 
-# Diarization-Pipeline einmalig beim Start laden
+# Diarization-Pipeline laden
 pipeline = SpeakerDiarization.from_pretrained(
     "pyannote/speaker-diarization-3.0",
     use_auth_token=HUGGINGFACE_TOKEN
@@ -30,26 +29,31 @@ async def create_transkript(audio: UploadFile = File(...)):
     audio_path = "input_files/temp_audio.wav"
     output_txt = f"output_files/{audio.filename}_transkript.txt"
 
-    # Datei abspeichern
+    # Hochgeladene Datei speichern
     with open(input_path, "wb") as buffer:
         shutil.copyfileobj(audio.file, buffer)
 
-    # Audio konvertieren zu WAV
-    audio_clip = mp.AudioFileClip(input_path)
-    audio_clip.write_audiofile(audio_path, codec="pcm_s16le", fps=16000)
+    # Konvertiere Audio zu WAV (16kHz, mono) via ffmpeg
+    subprocess.run([
+        "ffmpeg", "-i", input_path,
+        "-acodec", "pcm_s16le",
+        "-ac", "1",
+        "-ar", "16000",
+        audio_path
+    ], check=True)
 
     # Transkription mit Whisper
     result = model.transcribe(audio_path, language="de")
 
-    # Speaker Diarization
+    # Sprecheranalyse
     diarization = pipeline({"uri": "audio", "audio": audio_path})
 
-    # Sprecher-Zeiten auslesen
+    # Sprecher-Zeiten sammeln
     speakers = []
     for turn, _, speaker in diarization.itertracks(yield_label=True):
         speakers.append((turn.start, turn.end, speaker))
 
-    # Sprecher im Transkript kennzeichnen
+    # Transkript mit Sprechern zusammenbauen
     transcript_with_speakers = ""
     current_speaker = None
     for segment in result["segments"]:
@@ -68,7 +72,7 @@ async def create_transkript(audio: UploadFile = File(...)):
         else:
             transcript_with_speakers += f"{text}\n"
 
-    # Ergebnis in Datei speichern
+    # Speichern in Datei
     with open(output_txt, "w", encoding="utf-8") as f:
         f.write(transcript_with_speakers)
 
@@ -76,5 +80,5 @@ async def create_transkript(audio: UploadFile = File(...)):
     os.remove(input_path)
     os.remove(audio_path)
 
-    # Ergebnis-Datei zurückgeben
+    # Transkript zurückgeben
     return FileResponse(path=output_txt, filename="transkript.txt", media_type="text/plain")
