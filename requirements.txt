@@ -1,6 +1,5 @@
 fastapi
 uvicorn
-whisper
 torch
 torchaudio
 python-multipart
@@ -11,3 +10,4 @@ decorator
 tqdm
 requests
 pyannote.audio
+git+https://github.com/openai/whisper.git
