@@ -15,7 +15,7 @@ HUGGINGFACE_TOKEN = os.getenv("HUGGINGFACE_TOKEN")
 os.environ["PATH"] += os.pathsep + "/opt/homebrew/bin/"
 
 # Whisper-Modell laden
-model = whisper.load_model("small")
+model = whisper.load_model("tiny")
 
 # Diarization-Pipeline laden
 pipeline = SpeakerDiarization.from_pretrained(
