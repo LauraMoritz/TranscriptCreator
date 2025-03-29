@@ -3,7 +3,8 @@ from fastapi.responses import FileResponse
 import shutil
 import os
 import whisper
-import moviepy.editor as mp
+import moviepy
+from moviepy import editor as mp
 from pyannote.audio.pipelines import SpeakerDiarization
 
 app = FastAPI()
