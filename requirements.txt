@@ -5,6 +5,9 @@ torch
 torchaudio
 python-multipart
 moviepy
-pyannote.audio
+imageio
 imageio-ffmpeg
-
+decorator
+tqdm
+requests
+pyannote.audio
