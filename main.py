@@ -3,7 +3,7 @@ from fastapi.responses import FileResponse
 import shutil
 import os
 import whisper
-from moviepy.editor import AudioFileClip
+import moviepy.editor as mp
 from pyannote.audio.pipelines import SpeakerDiarization
 
 app = FastAPI()
@@ -34,7 +34,7 @@ async def create_transkript(audio: UploadFile = File(...)):
         shutil.copyfileobj(audio.file, buffer)
 
     # Audio konvertieren zu WAV
-    audio_clip = AudioFileClip(input_path)
+    audio_clip = mp.AudioFileClip(input_path)
     audio_clip.write_audiofile(audio_path, codec="pcm_s16le", fps=16000)
 
     # Transkription mit Whisper
